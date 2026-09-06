@@ -293,10 +293,16 @@ function priceHTML(w){
   if(w.price){ const t=w.ptext&&/\d/.test(w.ptext)?w.ptext:(w.cur==='USD'?'$'+fmt(Math.round(w.price)):fmt(Math.round(w.price))+' '+w.cur); return '<div class="p">'+esc(t)+'</div>'; }
   return '<div class="p na">'+esc(w.ptext||'Price on request')+'</div>';
 }
+function thumb(u){
+  if(!u) return u;
+  if(/squarespace-cdn\.com/.test(u)) return u.split('?')[0]+'?format=750w';
+  if(/cdn\.shopify\.com/.test(u) && !/[?&]width=/.test(u)) return u+(u.includes('?')?'&':'?')+'width=800';
+  return u;
+}
 function card(w){
   const k=saveKey(w);
   return '<article class="card" data-i="'+w.i+'">'
-   +'<button class="im" aria-label="Open '+esc(w.title||'Untitled')+'">'+(w.img?'<img loading="lazy" decoding="async" referrerpolicy="no-referrer" src="'+esc(w.img)+'" alt="" onerror="this.parentNode.innerHTML=\'<div class=ph>No image</div>\'">':'<div class="ph">No image</div>')+'</button>'
+   +'<button class="im" aria-label="Open '+esc(w.title||'Untitled')+'">'+(w.img?'<img loading="lazy" decoding="async" referrerpolicy="no-referrer" src="'+esc(thumb(w.img))+'" alt="" onerror="this.parentNode.innerHTML=\'<div class=ph>No image</div>\'">':'<div class="ph">No image</div>')+'</button>'
    +'<button class="save'+(SAVES.has(k)?' on':'')+'" data-k="'+esc(k)+'" aria-label="Save"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.6-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.4-7 10-7 10z"/></svg></button>'
    +'<div class="meta"><div class="a">'+esc(w.artist||'Artist not listed')+'</div><div class="t">'+titleHTML(w)+'</div>'
    +(w.medium?'<div class="md" title="'+esc(w.medium)+'">'+esc(w.medium)+'</div>':'')
