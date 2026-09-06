@@ -50,7 +50,14 @@ nav.top .cnt{margin-left:5px;font-size:11px;background:var(--chip);color:var(--c
 .metros .n{color:inherit;opacity:.65;margin-left:6px;font-size:12px;font-variant-numeric:tabular-nums}
 
 /* layout */
-.wrap{display:grid;grid-template-columns:260px 1fr;gap:40px;padding:0 40px 60px}
+.wrap{display:grid;grid-template-columns:260px minmax(0,1fr);gap:40px;padding:0 40px 60px}
+.wrap>*{min-width:0}
+main{min-width:0;max-width:100%}
+.grid{width:100%}
+.card{max-width:100%;overflow:hidden}
+.meta>div{overflow-wrap:anywhere}
+.meta .md{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+html{overflow-x:hidden}
 aside{position:sticky;top:120px;align-self:start;max-height:calc(100vh - 130px);overflow-y:auto;padding-right:8px;scrollbar-width:thin}
 .fgroup{border-top:1px solid var(--line2);padding:16px 0}
 .fgroup:first-child{border-top:0;padding-top:6px}
