@@ -72,6 +72,9 @@ aside{position:sticky;top:120px;align-self:start;max-height:calc(100vh - 130px);
 
 /* results */
 .tools{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:6px 0 18px;flex-wrap:wrap}
+.fbtn{display:none;height:40px;padding:0 16px;border:1px solid var(--fg);border-radius:3px;font-weight:500;align-items:center;gap:8px}
+.fbtn .n{font-size:11px;background:var(--chip);color:var(--chip-fg);border-radius:10px;padding:1px 6px}
+.fhead,.ffoot{display:none}
 .count{color:var(--fg2);font-variant-numeric:tabular-nums}
 .count b{color:var(--fg);font-weight:600}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
@@ -160,7 +163,15 @@ footer a{color:var(--fg2)}
   .metros{flex-wrap:wrap;overflow:visible;padding:8px 16px 12px}
   .metros button{height:30px;padding:0 12px;font-size:13px}
   .wrap,.gview,footer{padding-left:16px;padding-right:16px}
-  .wrap{grid-template-columns:minmax(0,1fr);gap:16px}aside{position:static;max-height:none;padding-right:0}
+  .wrap{grid-template-columns:minmax(0,1fr);gap:16px}
+  aside{display:none}
+  aside.open{display:block;position:fixed;inset:0;z-index:30;background:var(--bg);padding:0 16px 90px;overflow-y:auto;max-height:none}
+  .fhead{display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg);padding:14px 0 10px;border-bottom:1px solid var(--line2);font-weight:600;font-size:16px;z-index:1}
+  .fhead button{font-size:26px;line-height:1;width:36px;height:36px}
+  .ffoot{display:block;position:fixed;left:0;right:0;bottom:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:var(--bg);border-top:1px solid var(--line2);z-index:31}
+  .ffoot button{width:100%;height:48px;background:var(--chip);color:var(--chip-fg);border-radius:3px;font-weight:600;font-size:15px}
+  .fbtn{display:inline-flex}
+  .tools .sort{margin-left:auto}
   main{min-width:0}
   .grid{column-count:2;column-gap:14px}.card{margin-bottom:22px}
   .tools{padding-bottom:12px}
@@ -221,6 +232,8 @@ const rank=w=>(w.img?0:8)+(w.artist?0:4)+(w.price?0:2)+(w.medium?0:1);
 const FEATURED=W.map(w=>w.i).sort((a,b)=>rank(W[a])-rank(W[b])||W[a].artist.localeCompare(W[b].artist)||W[a].title.localeCompare(W[b].title));
 
 // ---- state ----
+function activeCount(){ return (S.q?1:0)+S.types.size+((S.preset!=='any'||S.pmin||S.pmax)?1:0)+(S.priced?1:0)+(S.avail?1:0)+S.gals.size; }
+let FOPEN=false, FSCROLL=0;
 const S={view:'collect',q:'',metro:'',types:new Set(),preset:'any',pmin:'',pmax:'',priced:false,avail:'',gals:new Set(),sort:'featured',gq:''};
 function readHash(){
   const h=new URLSearchParams(location.hash.slice(1));
@@ -332,9 +345,11 @@ function render(){
   const fc=facetCounts();
   app.innerHTML='<div class="wrap">'+(S.view==='saves'?'':'<aside id="filters">'+filtersHTML(fc)+'</aside>')
     +'<main><div class="tools"><div class="count"><b>'+fmt(IDS.length)+'</b> '+(S.view==='saves'?'saved works':'works')+'</div>'
+    +(S.view==='saves'?'':'<button class="fbtn" id="fbtn">Filters'+(activeCount()?'<span class="n">'+activeCount()+'</span>':'')+'</button>')
     +'<div class="chips" id="chips">'+chipsHTML()+'</div>'
     +'<label class="sort">Sort <select id="sort">'+[['featured','Featured'],['price-asc','Price (low to high)'],['price-desc','Price (high to low)'],['artist','Artist A to Z'],['gallery','Gallery A to Z'],['year','Year (newest)']].map(o=>'<option value="'+o[0]+'"'+(S.sort===o[0]?' selected':'')+'>'+o[1]+'</option>').join('')+'</select></label></div>'
     +'<div class="grid" id="grid"></div><div class="more" id="more"></div></main></div>';
+  const asideEl=$('#filters'); if(asideEl&&FOPEN){ asideEl.classList.add('open'); asideEl.scrollTop=FSCROLL; }
   if(S.view==='saves' && !IDS.length){ $('#grid').innerHTML=''; $('#more').innerHTML='<div class="empty" style="width:100%"><b>No saved works yet</b>Hover a work and tap the heart, or use Save inside a work.</div>'; }
   else if(!IDS.length){ $('#more').innerHTML='<div class="empty" style="width:100%"><b>No works match these filters</b>Try widening the price range or clearing a filter.</div>'; }
   else more();
@@ -365,7 +380,7 @@ function filtersHTML(fc){
   if(S.gq){ const q=S.gq.toLowerCase(); gl=gl.filter(([gi])=>G[gi].n.toLowerCase().includes(q)); }
   const selected=[...S.gals].filter(gi=>!gl.some(x=>x[0]===gi)).map(gi=>[gi,fc.gal.get(gi)||0]);
   gl=[...selected,...gl].slice(0,60);
-  return '<div class="fgroup"><h3>Medium</h3>'+TYPES.map(t=>{const n=fc.type.get(t)||0;return '<label class="opt'+(n?'':' dim')+'"><input type="checkbox" data-type="'+esc(t)+'"'+(S.types.has(t)?' checked':'')+'><span class="lbl"><span>'+(TYPE_LABEL[t]||t)+'</span><span class="c">'+fmt(n)+'</span></span></label>';}).join('')+'</div>'
+  return '<div class="fhead">Filters<button id="fclose" aria-label="Close filters">×</button></div><div class="fgroup"><h3>Medium</h3>'+TYPES.map(t=>{const n=fc.type.get(t)||0;return '<label class="opt'+(n?'':' dim')+'"><input type="checkbox" data-type="'+esc(t)+'"'+(S.types.has(t)?' checked':'')+'><span class="lbl"><span>'+(TYPE_LABEL[t]||t)+'</span><span class="c">'+fmt(n)+'</span></span></label>';}).join('')+'</div>'
    +'<div class="fgroup"><h3>Price</h3>'+PRESETS.map(p=>'<label class="opt"><input type="radio" name="preset" value="'+p[0]+'"'+(S.preset===p[0]?' checked':'')+'><span class="lbl"><span>'+p[1]+'</span></span></label>').join('')
    +'<div class="range"><input id="pmin" type="number" min="0" placeholder="$ min" value="'+esc(S.pmin)+'"><span>to</span><input id="pmax" type="number" min="0" placeholder="$ max" value="'+esc(S.pmax)+'"></div>'
    +'<label class="opt" style="margin-top:8px"><input type="checkbox" id="priced"'+(S.priced?' checked':'')+'><span class="lbl"><span>Only works with a listed price</span></span></label>'
@@ -373,12 +388,17 @@ function filtersHTML(fc){
    +'<div class="fgroup"><h3>Availability</h3>'+[['','Any'],['Available','Marked available by the gallery'],['Not stated','Shown, availability not stated']].map(a=>'<label class="opt"><input type="radio" name="avail" value="'+a[0]+'"'+(S.avail===a[0]?' checked':'')+'><span class="lbl"><span>'+a[1]+'</span></span></label>').join('')+'</div>'
    +'<div class="fgroup"><h3>Gallery'+(S.gals.size?'<button id="clearg">Clear</button>':'')+'</h3><input class="gsearch" id="gq" placeholder="Find a gallery" value="'+esc(S.gq)+'"><div class="glist">'
    +gl.map(([gi,n])=>'<label class="opt'+(n?'':' dim')+'"><input type="checkbox" data-gal="'+gi+'"'+(S.gals.has(gi)?' checked':'')+'><span class="lbl"><span>'+esc(G[gi].n)+'</span><span class="c">'+fmt(n)+'</span></span></label>').join('')+'</div></div>'
-   +'<button class="clear" id="clear"'+(anyActive?'':' disabled')+'>Clear all filters</button>';
+   +'<button class="clear" id="clear"'+(anyActive?'':' disabled')+'>Clear all filters</button>'
+   +'<div class="ffoot"><button id="fshow">Show '+fmt(IDS.length)+' works</button></div>';
 }
 function bindFilters(){
   const sort=$('#sort'); if(sort) sort.onchange=()=>{S.sort=sort.value; render();};
   $$('#chips button').forEach(b=>b.onclick=()=>{ const c=b.dataset.chip; if(c==='q')S.q='',$('#q').value=''; else if(c.startsWith('type:'))S.types.delete(c.slice(5)); else if(c==='price'){S.preset='any';S.pmin='';S.pmax='';} else if(c==='priced')S.priced=false; else if(c==='avail')S.avail=''; else if(c.startsWith('gal:'))S.gals.delete(Number(c.slice(4))); render(); });
+  const fb=$('#fbtn'); if(fb) fb.onclick=()=>{ FOPEN=true; FSCROLL=0; $('#filters').classList.add('open'); document.body.style.overflow='hidden'; };
   const f=$('#filters'); if(!f) return;
+  const closeSheet=()=>{ FOPEN=false; f.classList.remove('open'); document.body.style.overflow=''; };
+  $('#fclose').onclick=closeSheet; $('#fshow').onclick=closeSheet;
+  f.onscroll=()=>{ FSCROLL=f.scrollTop; };
   $$('#filters [data-type]').forEach(cb=>cb.onchange=()=>{ cb.checked?S.types.add(cb.dataset.type):S.types.delete(cb.dataset.type); render(); });
   $$('#filters [name=preset]').forEach(r=>r.onchange=()=>{ S.preset=r.value; S.pmin=''; S.pmax=''; render(); });
   $$('#filters [name=avail]').forEach(r=>r.onchange=()=>{ S.avail=r.value; render(); });
